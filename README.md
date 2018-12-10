@@ -1,4 +1,4 @@
-# Slides and some code for presentation "DeepLearning with R"
+# Slides and some code for presentation "DeepLearning in R"
 
 link to event: https://www.meetup.com/ru-RU/St-Petersburg-R-User-Group/events/256745888/
 
