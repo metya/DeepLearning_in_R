@@ -1,6 +1,6 @@
 ---
 title: "Deep Learning in R"
-subtitle: "\u2591 <br/>Обзор фреймворков с примерами"  
+subtitle: "\u2591<br/>Обзор фреймворков с примерами"  
 author: "metya"
 date: '`r Sys.Date()`'
 output:
@@ -32,7 +32,7 @@ background-color: #8d6e63
 
 #Disclaimer
 
-Цель доклада не дать понимаение что такое глубокое обучение и детально разобрать как работать с ним и обучать современные модели, а скорее показать как просто можно начать тем, кто давно хотел и чесались руки, но все было никак не взяться
+Цель доклада не дать понимание, что такое глубокое обучение и детально разобрать как работать с ним и обучать современные модели, а скорее показать, как просто можно начать тем, кто давно хотел и чесались руки, но все было никак не взяться
 
 ---
 # Deep Learning
@@ -130,11 +130,11 @@ https://tensorflow.rstudio.com/
 
 - Имеет самый большой спрос у продакшн систем
 
-- Имеет API во множестве языков
+- Имеет API во множество языков
 
 - Имеет статический граф вычислений, что бывает неудобно, зато оптимизированно
 
-- Примерно с лета имеет фичу **eager execution**, который почти нивелирует это неудобство. Но почти не считается
+- Примерно с лета имеет фичу **eager execution**, которая почти нивелирует это неудобство. Но почти не считается
 
 - Доступен в R как самостоятельно, так и как бэкэнд Keras
 
@@ -174,9 +174,9 @@ https://tensorflow.rstudio.com/keras/
 - Высокоуровневый фреймворк над другими такими бэкэндами как Theano, CNTK, Tensorflow, и еще некоторые на подходе
 - Делается Франсуа Шолле, который написал книгу Deep Learning in R
 - Очень простой код
-- Один и тот же код рабоает на разных бэкендах, что теоретически может быть полезно (нет)
-- Есть очень много блоков нейросетей из современных SOTA работ
-- Нивелирует боль статических вычислительных графов
+- Один и тот же код работает на разных бэкендах, что теоретически может быть полезно (нет)
+- Есть очень много блоков нейросетей из современных State-of-the-Art работ
+- Нивелирует боль статических вычислительных графов (не совсем)
 - Уже давно дефолтом поставляется вместе с TensorFlow как его часть, но можно использовать и отдельно
 
 
@@ -245,31 +245,32 @@ make rpkg
 ---
 
 ## Загрузка и обработка данных
-```{r eval=FALSE}
-df <- read_csv("data.csv")
-set.seed(100)
+```{r eval=TRUE, cache=TRUE}
+df <- readRDS('data.rds')
+set.seed(100) #set seed to reproduce results
 ```
 
-```{r}
+```{r eval=TRUE, cache=TRUE}
 #transform and split train on x and y
-train_ind <- sample(1:77, 60)
-x_train <- as.matrix(df[train_ind, 2:8])
-y_train <- unlist(df[train_ind, 9])
-x_val <- as.matrix(df[-train_ind, 2:8])
-y_val <- unlist(df[-train_ind, 9])
+train_ind <- sample(1:77, 60) # random split data
+x_train <- as.matrix(df[train_ind, 2:8]) # train data
+y_train <- unlist(df[train_ind, 9]) # train labels
+x_val <- as.matrix(df[-train_ind, 2:8]) # test validation data
+y_val <- unlist(df[-train_ind, 9]) # validation labels
 ```
 
 ---
 ## Задания архитектуры сети
 
-```{r require(mxnet)}
+```{r require(mxnet), eval=TRUE, message=FALSE}
 require(mxnet)
+
 # define graph
-data <- mx.symbol.Variable("data")
+data <- mx.symbol.Variable("data") # define variable node
 
-fc1 <- mx.symbol.FullyConnected(data, num_hidden = 1)
+fc1 <- mx.symbol.FullyConnected(data, num_hidden = 1) # define one layer perceptron
 
-linreg <- mx.symbol.LinearRegressionOutput(fc1)
+linreg <- mx.symbol.LinearRegressionOutput(fc1) # output node
 
 # define learing parameters
 initializer <- mx.init.normal(sd = 0.1)
@@ -277,11 +278,10 @@ initializer <- mx.init.normal(sd = 0.1)
 optimizer <- mx.opt.create("sgd", 
                            learning.rate = 1e-6,
                            momentum = 0.9)
-# define logger
-
+# define logger for logging train proccess
 logger <- mx.metric.logger()
 epoch.end.callback <- mx.callback.log.train.metric(
-  period = 4, # число батчей, после которого оценивается метрика
+  period = 4, # number of batches when metrics call
   logger = logger)
 
 # num of epoch
@@ -291,21 +291,21 @@ n_epoch <- 20
 
 ---
 ## Построим граф модели
-```{r eval=FALSE}
+```{r eval=TRUE, fig.height=4, cache=TRUE}
 # plot our model
 graph.viz(linreg)
 ```
-<img src="Deep_Learning_in_R_files/graph.png" style="width:50%" >
+
 
 ---
 ## Обучим
-```{r tidy=FALSE}
+```{r fig.height=4, message=FALSE, warning=FALSE, split=TRUE, collapse=FALSE}
 model <- mx.model.FeedForward.create(
   symbol = linreg, # our model
   X = x_train, # our data
   y = y_train, # our label
   ctx = mx.cpu(), # engine
-  num.round = n_epoch, 
+  num.round = n_epoch, # number of epoch
   initializer = initializer, # inizialize weigths
   optimizer = optimizer, # sgd optimizer
   eval.data = list(data = x_val, label = y_val), # evaluation on evey epoch
@@ -314,11 +314,12 @@ model <- mx.model.FeedForward.create(
   epoch.end.callback = epoch.end.callback) # logger
 
 ```
+![](Deep_Learning_in_R_files/mxnettrain.png)
 
 ---
 ## Построим кривую обучения
-```{r fig.height=4, dev='svg'}
-rmse_log <- data.frame(RMSE = c(logger$train, logger$eval),dataset = c(rep("train", length(logger$train)),                        rep("val", length(logger$eval))),epoch = 1:n_epoch)
+```{r fig.height=4, dev='svg', eval=TRUE}
+rmse_log <- data.frame(RMSE = c(logger$train, logger$eval), dataset = c(rep("train", length(logger$train)),                        rep("val", length(logger$eval))),epoch = 1:n_epoch)
 library(ggplot2)
 ggplot(rmse_log, aes(epoch, RMSE, group = dataset, colour = dataset)) +  geom_point() +  geom_line()
 
@@ -335,7 +336,7 @@ install.packages("keras")
 keras::install_keras(tensorflow = 'gpu')
 ```
 ### Загрузка нужных нам пакетов
-```{r}
+```{r eval=TRUE, message=FALSE}
 require(keras)     # Neural Networks
 require(tidyverse) # Data cleaning / Visualization
 require(knitr)     # Table printing
@@ -345,14 +346,14 @@ require(ggridges)  # Visualization
 
 ---
 ## Загрузка данных
-```{r}
+```{r eval=TRUE, cache=TRUE}
 activityLabels <- read.table("Deep_Learning_in_R_files/HAPT Data Set/activity_labels.txt", 
                              col.names = c("number", "label")) 
 activityLabels %>% kable(align = c("c", "l"))
 ```
 
 ---
-```{r}
+```{r eval=TRUE, cache=TRUE}
 labels <- read.table("Deep_Learning_in_R_files/HAPT Data Set/RawData/labels.txt",
                      col.names = c("experiment", "userId", "activity", "startPos", "endPos"))
 dataFiles <- list.files("Deep_Learning_in_R_files/HAPT Data Set/RawData")
@@ -363,14 +364,15 @@ labels %>%
 
 ---
 ## TLDR
-```{r eval=FALSE}
+#### Потому что очень много препроцессинга и всего такого, мы просто загрузим уже готовый результат
+```{r eval=TRUE, cache=TRUE}
 allObservations <- read_rds("allObservations.rds")
 allObservations %>% dim()
 ```
 
 ---
 ## Посмотрим на данные
-```{r fig.height=4, dev='svg'}
+```{r eval=TRUE, fig.height=4, warning=FALSE, dev='svg', message=FALSE, cache=TRUE}
 allObservations %>% 
   mutate(recording_length = map_int(data,nrow)) %>% 
   ggplot(aes(x = recording_length, y = activityName)) +
@@ -379,7 +381,7 @@ allObservations %>%
 
 ---
 ## Отфильтруем
-```{r fig.height=4}
+```{r fig.height=4, eval=TRUE, cache=TRUE}
 desiredActivities <- c("STAND_TO_SIT", "SIT_TO_STAND", "SIT_TO_LIE",  "LIE_TO_SIT", "STAND_TO_LIE","LIE_TO_STAND")
 filteredObservations <- allObservations %>% 
   filter(activityName %in% desiredActivities) %>% 
@@ -389,7 +391,7 @@ filteredObservations %>% paged_table()
 
 ---
 ## Разделим на трейн тест
-```{r}
+```{r eval=TRUE, cache=TRUE}
 set.seed(100) # seed for reproducibility
 
 ## get all users
@@ -412,11 +414,11 @@ testData <- filteredObservations %>%
 
 ---
 layout: true
-## Посмотрим собственно на активности по классам
+## Посмотрим на графики активности по классам
 
 ---
 
-```{r eval=FALSE}
+```{r eval=TRUE, cache=TRUE}
 unpackedObs <- 1:nrow(trainData) %>% 
   map_df(function(rowNum){
     dataRow <- trainData[rowNum, ]
@@ -431,7 +433,7 @@ unpackedObs <- 1:nrow(trainData) %>%
   mutate(type = ifelse(type == "a", "acceleration", "gyro"))
 ```
 ---
-```{r fig.height=4}
+```{r eval=TRUE, fig.dim=c(11,4), fig.align='center', dev='svg', message=FALSE, warning=FALSE, cache=TRUE}
 unpackedObs %>% 
   ggplot(aes(x = time, y = value, color = direction)) +
   geom_line(alpha = 0.2) +
@@ -446,7 +448,7 @@ layout: true
 ## Подготовка данных к обучению
 
 ---
-```{r}
+```{r message=FALSE, warning=FALSE, require(keras), eval=TRUE, cache=TRUE}
 padSize <- trainData$data %>% 
   map_int(nrow) %>% 
   quantile(p = 0.98) %>% 
@@ -464,7 +466,7 @@ dim(trainObs)
 ```
 
 ---
-```{r}
+```{r eval=TRUE, cache=TRUE}
 # one hot encoding
 oneHotClasses <- . %>% 
 {. - 7} %>%        # bring integers down to 0-6 from 7-12
@@ -479,7 +481,7 @@ layout:true
 ## Наконец то сетка!
 
 ---
-```{r}
+```{r eval=TRUE, cache=TRUE}
 input_shape <- dim(trainObs)[-1]
 num_classes <- dim(trainY)[2]
 
@@ -490,34 +492,34 @@ dense_size <- 48  # size of our penultimate dense layer.
 ```
 
 ---
-```{r}
-model <- keras_model_sequential()
-model %>% layer_conv_1d(
-    filters = filters,
+```{r eval=TRUE, cache=TRUE}
+model <- keras_model_sequential() # define type of class model
+model %>% layer_conv_1d( # add first convolutions layer
+    filters = filters, # num of filters
+    kernel_size = kernel_size, # kernel size
+    input_shape = input_shape, 
+    padding = "valid", # to fill padding with zero
+    activation = "relu") %>% # activation fiucntion on the end of layer
+  layer_batch_normalization() %>% # batch norm
+  layer_spatial_dropout_1d(0.15) %>% # dropout 15% neurons
+  layer_conv_1d(filters = filters/2, # second convolution layer with half of num filters
     kernel_size = kernel_size, 
-    input_shape = input_shape,
-    padding = "valid", 
     activation = "relu") %>%
-  layer_batch_normalization() %>%
-  layer_spatial_dropout_1d(0.15) %>% 
-  layer_conv_1d(filters = filters/2,
-    kernel_size = kernel_size,
-    activation = "relu") %>%
-  layer_global_average_pooling_1d() %>% 
-  layer_batch_normalization() %>%
-  layer_dropout(0.2) %>% 
-  layer_dense(dense_size,
+  layer_global_average_pooling_1d() %>%  # to average all verctor representation in one featuremap
+  layer_batch_normalization() %>% 
+  layer_dropout(0.2) %>% # dropout 20% neurons
+  layer_dense(dense_size, # fullyconected layer perceptron
     activation = "relu") %>% 
   layer_batch_normalization() %>%
   layer_dropout(0.25) %>% 
-  layer_dense(num_classes, 
-    activation = "softmax",
+  layer_dense(num_classes, # one more fully connected layer size of num classes 
+    activation = "softmax", # our loss function for multyply classification
     name = "dense_output") 
 ```
 
 ---
 ### Выведем описание нашей сетки
-```{r eval=FALSE}
+```{r eval=FALSE, cache=TRUE, split=TRUE, collapse=FALSE}
 summary(model)
 ```
 ![](Deep_Learning_in_R_files/keras_summary.png)
@@ -527,17 +529,17 @@ layout:true
 
 ---
 ## Компиляция графа
-```{r eval=FALSE}
+```{r eval=TRUE, cache=TRUE}
 model %>% compile(
-  loss = "categorical_crossentropy",
-  optimizer = "rmsprop",
-  metrics = "accuracy"
+  loss = "categorical_crossentropy", # our loss function
+  optimizer = "rmsprop", # our optimizer alrorithm
+  metrics = "accuracy" # our metric
 )
 ```
 
 ---
 ## train
-```{r eval=FALSE}
+```{r eval=FALSE, cache=TRUE, fig.show='animate', dev='svg'}
 trainHistory <- model %>%
   fit(
     x = trainObs, y = trainY, # data
@@ -552,7 +554,7 @@ trainHistory <- model %>%
 ![](Deep_Learning_in_R_files/train.png)
 
 ---
-![](Deep_Learning_in_R_files/train_plot.png)
+![](Deep_Learning_in_R_files/train_plot2.png)
 
 ---
 layout:true
@@ -560,7 +562,8 @@ layout:true
 
 ---
 ## Подготовка теста
-```{r}
+```{r eval=TRUE, cache=TRUE}
+# one-hot ecnoding labels for predict
 oneHotToLabel <- activityLabels %>% 
   mutate(number = number - 7) %>% 
   filter(number >= 0) %>% 
@@ -568,13 +571,13 @@ oneHotToLabel <- activityLabels %>%
   select(-number)
 ```
 ## Выбор лучшей модели
-```{r}
+```{r eval=TRUE, cache=TRUE}
 bestModel <- load_model_hdf5("best_model.h5")
 ```
 
 ---
 ## Еще немного кода
-```{r}
+```{r eval=TRUE, cache=TRUE}
 tidyPredictionProbs <- bestModel %>% 
   predict(testObs) %>% 
   as_data_frame() %>% 
@@ -595,7 +598,7 @@ predictionPerformance <- tidyPredictionProbs %>%
 ```
 
 ---
-```{r}
+```{r eval=TRUE, cache=TRUE}
 predictionPerformance %>% paged_table()
 ```
 
@@ -604,7 +607,7 @@ layout:true
 ## Визуализация ошибок
 
 ---
-```{r fig.height=4}
+```{r fig.height=4, eval=TRUE, cache=TRUE}
 predictionPerformance %>% 
   mutate(result = ifelse(correct, 'Correct', 'Incorrect')) %>% 
   ggplot(aes(highestProb)) +
@@ -616,7 +619,7 @@ predictionPerformance %>%
 ```
 
 ---
-```{r fig.height=4}
+```{r fig.height=4, eval=TRUE, cache=TRUE}
 predictionPerformance %>% 
   group_by(truth, predicted) %>% 
   summarise(count = n()) %>% 
@@ -644,9 +647,10 @@ class: center, middle
 
 # Спасибо!
 
-Слайды сделаны с помощью R package [**xaringan**](https://github.com/yihui/xaringan).
+ Слайды сделаны с помощью R package [**xaringan**](https://github.com/yihui/xaringan).
 
-Веб версию слайдов можно найти на https://metya.github.io/DeepLearning_n_R/
 
-Код можно посмотреть здесь 
-https://github.com/metya/DeepLearning_n_R/
+ Веб версию слайдов можно найти на https://metya.github.io/DeepLearning_in_R/
+
+
+ Код можно посмотреть здесь        https://github.com/metya/DeepLearning_in_R/

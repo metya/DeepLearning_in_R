@@ -1,0 +1,17 @@
+base
+xaringanthemer
+mxnet
+bindrcpp
+ggplot2
+keras
+tidyverse
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+knitr
+rmarkdown
+ggridges
