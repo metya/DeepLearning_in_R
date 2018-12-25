@@ -9,3 +9,9 @@ files with code:
 - [keras.R](https://github.com/metya/DeepLearning_in_R/blob/master/mxnet.R) file with keras example conv1d models on real task
 
 
+useful links:
+- [Overview frameworks](https://towardsdatascience.com/deep-learning-framework-power-scores-2018-23607ddf297a)
+- [Keras in R](http://blogs.rstudio.com/tensorflow/posts/2017-09-06-keras-for-r/)
+- [Глубокое обучение с R и Keras на примере Carvana Image Masking Challenge (ODS Habr)](https://habr.com/company/ods/blog/340212/)
+- [RStudio Tensorflow blog ](http://blogs.rstudio.com/tensorflow/)
+- [Docker image with R and Keras](https://github.com/dfalbel/keras-r-docker)
